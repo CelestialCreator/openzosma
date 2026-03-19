@@ -36,6 +36,16 @@
 		}
 	},
 	"files": {
-		"ignore": ["node_modules", "dist", ".next", ".turbo", "**/generated/**", "*.proto", "*.sql", "**/migrations/*.js"]
+		"ignore": [
+			"node_modules",
+			"dist",
+			".next",
+			".turbo",
+			"**/generated/**",
+			"*.proto",
+			"*.sql",
+			"**/migrations/*.js",
+			"next-env.d.ts"
+		]
 	}
 }
