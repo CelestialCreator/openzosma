@@ -1,3 +1,4 @@
+import "dotenv/config"
 export type {
 	AgentMessage,
 	AgentProvider,
@@ -6,4 +7,4 @@ export type {
 	AgentStreamEvent,
 	AgentStreamEventType,
 } from "./types.js"
-export { PiAgentProvider } from "./pi-agent.js"
+export { PiAgentProvider } from "./pi.agent.js"
