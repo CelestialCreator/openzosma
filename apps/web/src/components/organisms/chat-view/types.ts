@@ -42,3 +42,5 @@ export type StreamToolCall = {
 	result?: unknown
 	iserror?: boolean
 }
+
+export type MessageSegment = { type: "text"; content: string } | { type: "tool"; toolcallid: string }

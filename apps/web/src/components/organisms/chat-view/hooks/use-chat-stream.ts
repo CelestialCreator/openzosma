@@ -1,6 +1,6 @@
 "use client"
 
-import { useSaveMessage } from "@/src/hooks/chat/use-save-message"
+import useSaveMessage from "@/src/hooks/chat/use-save-message"
 import { GATEWAY_URL } from "@/src/lib/constants"
 import { QUERY_KEYS } from "@/src/utils/query-keys"
 import type { AgentStreamEvent } from "@openzosma/agents/types"
@@ -8,7 +8,14 @@ import { useQueryClient } from "@tanstack/react-query"
 import type { FileUIPart } from "ai"
 import { useCallback, useState } from "react"
 import { toast } from "sonner"
-import type { ChatAttachment, ChatMessage, ChatParticipant, ConversationData, StreamToolCall } from "../types"
+import type {
+	ChatAttachment,
+	ChatMessage,
+	ChatParticipant,
+	ConversationData,
+	MessageSegment,
+	StreamToolCall,
+} from "../types"
 
 type SubmitMessage = {
 	text: string
@@ -19,21 +26,23 @@ type UseChatStreamReturn = {
 	streaming: boolean
 	streamingcontent: string
 	streamingtoolcalls: StreamToolCall[]
+	streamingsegments: MessageSegment[]
 	streamingreasoning: string
 	handlesubmit: (message: SubmitMessage) => Promise<void>
 }
 
-export function useChatStream(
+const useChatStream = (
 	conversationid: string,
 	conversation: ConversationData | null,
 	participants: ChatParticipant[],
-): UseChatStreamReturn {
+): UseChatStreamReturn => {
 	const queryClient = useQueryClient()
 	const { mutateAsync: saveMessage } = useSaveMessage()
 
 	const [streaming, setStreaming] = useState(false)
 	const [streamingcontent, setStreamingcontent] = useState("")
 	const [streamingtoolcalls, setStreamingtoolcalls] = useState<StreamToolCall[]>([])
+	const [streamingsegments, setStreamingsegments] = useState<MessageSegment[]>([])
 	const [streamingreasoning, setStreamingreasoning] = useState("")
 
 	const handlesubmit = useCallback(
@@ -65,7 +74,13 @@ export function useChatStream(
 			queryClient.setQueryData(
 				[QUERY_KEYS.CONVERSATION, conversationid],
 				(
-					old: { conversation: ConversationData; participants: ChatParticipant[]; messages: ChatMessage[] } | undefined,
+					old:
+						| {
+								conversation: ConversationData
+								participants: ChatParticipant[]
+								messages: ChatMessage[]
+						  }
+						| undefined,
 				) => {
 					if (!old) return old
 					return { ...old, messages: [...old.messages, usermsg] }
@@ -94,13 +109,16 @@ export function useChatStream(
 
 			const agentparticipant = participants.find((p) => p.participanttype === "agent")
 			if (!agentparticipant) {
-				queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CONVERSATION, conversationid] })
+				queryClient.invalidateQueries({
+					queryKey: [QUERY_KEYS.CONVERSATION, conversationid],
+				})
 				return
 			}
 
 			setStreaming(true)
 			setStreamingcontent("")
 			setStreamingtoolcalls([])
+			setStreamingsegments([])
 			setStreamingreasoning("")
 
 			try {
@@ -109,9 +127,14 @@ export function useChatStream(
 				let fullcontent = ""
 				let fullreasoning = ""
 				const toolcalls: Record<string, StreamToolCall> = {}
+				const segments: MessageSegment[] = []
 
 				const updatetoolcalls = () => {
 					setStreamingtoolcalls(Object.values(toolcalls))
+				}
+
+				const updatesegments = () => {
+					setStreamingsegments([...segments])
 				}
 
 				await new Promise<void>((resolve, reject) => {
@@ -138,6 +161,13 @@ export function useChatStream(
 								if (evt.text) {
 									fullcontent += evt.text
 									setStreamingcontent(fullcontent)
+									const last = segments[segments.length - 1]
+									if (last?.type === "text") {
+										last.content += evt.text
+									} else {
+										segments.push({ type: "text", content: evt.text })
+									}
+									updatesegments()
 								}
 								break
 							}
@@ -158,7 +188,9 @@ export function useChatStream(
 										args: parsedargs,
 										state: "calling",
 									}
+									segments.push({ type: "tool", toolcallid: toolCallId })
 									updatetoolcalls()
+									updatesegments()
 								}
 								break
 							}
@@ -189,6 +221,8 @@ export function useChatStream(
 											result: toolResult,
 											iserror: isToolError,
 										}
+										segments.push({ type: "tool", toolcallid: toolCallId })
+										updatesegments()
 									}
 									updatetoolcalls()
 								}
@@ -230,6 +264,12 @@ export function useChatStream(
 							sendertype: "agent",
 							senderid: agentparticipant.participantid,
 							content: fullcontent,
+							metadata:
+								Object.keys(toolcalls).length > 0
+									? { toolcalls: Object.values(toolcalls), segments }
+									: segments.length > 0
+										? { segments }
+										: {},
 						},
 					})
 				} catch (err) {
@@ -237,7 +277,9 @@ export function useChatStream(
 				}
 
 				// Refresh the conversation to get the persisted agent message
-				queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CONVERSATION, conversationid] })
+				queryClient.invalidateQueries({
+					queryKey: [QUERY_KEYS.CONVERSATION, conversationid],
+				})
 			} catch (err) {
 				console.error("Failed to stream from agent:", err)
 				toast.error("Failed to get response from agent")
@@ -246,10 +288,20 @@ export function useChatStream(
 			setStreaming(false)
 			setStreamingcontent("")
 			setStreamingtoolcalls([])
+			setStreamingsegments([])
 			setStreamingreasoning("")
 		},
 		[conversationid, conversation, participants, queryClient, saveMessage],
 	)
 
-	return { streaming, streamingcontent, streamingtoolcalls, streamingreasoning, handlesubmit }
+	return {
+		streaming,
+		streamingcontent,
+		streamingtoolcalls,
+		streamingsegments,
+		streamingreasoning,
+		handlesubmit,
+	}
 }
+
+export default useChatStream

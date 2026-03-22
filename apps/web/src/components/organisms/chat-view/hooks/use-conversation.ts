@@ -1,6 +1,6 @@
 "use client"
 
-import { useGetConversation } from "@/src/hooks/chat/use-get-conversation"
+import useGetConversation from "@/src/hooks/chat/use-get-conversation"
 import { QUERY_KEYS } from "@/src/utils/query-keys"
 import { useQueryClient } from "@tanstack/react-query"
 import { useCallback } from "react"
@@ -15,7 +15,7 @@ type UseConversationReturn = {
 	refetch: () => Promise<void>
 }
 
-export function useConversation(conversationid: string): UseConversationReturn {
+const useConversation = (conversationid: string): UseConversationReturn => {
 	const queryClient = useQueryClient()
 	const { data, isLoading, refetch: queryRefetch } = useGetConversation(conversationid)
 
@@ -41,3 +41,5 @@ export function useConversation(conversationid: string): UseConversationReturn {
 
 	return { conversation, participants, messages, loading: isLoading, setMessages, refetch }
 }
+
+export default useConversation

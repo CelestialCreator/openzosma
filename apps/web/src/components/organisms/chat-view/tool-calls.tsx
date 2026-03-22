@@ -29,7 +29,7 @@ const TOOL_DISPLAY: Record<string, { label: string; icon: typeof WrenchIcon }> =
 	},
 }
 
-function gettooldisplay(toolname: string) {
+const getToolDisplay = (toolname: string) => {
 	return TOOL_DISPLAY[toolname] ?? { label: toolname, icon: WrenchIcon }
 }
 
@@ -37,8 +37,8 @@ type ToolActivityPillProps = {
 	tool: StreamToolCall
 }
 
-export function ToolActivityPill({ tool }: ToolActivityPillProps) {
-	const display = gettooldisplay(tool.toolname)
+const ToolActivityPill = ({ tool }: ToolActivityPillProps) => {
+	const display = getToolDisplay(tool.toolname)
 	const Icon = display.icon
 	const isRunning = tool.state === "calling" || tool.state === "streaming-args"
 	const isError = tool.state === "error" || tool.iserror
@@ -107,3 +107,5 @@ export function ToolActivityPill({ tool }: ToolActivityPillProps) {
 		</Collapsible>
 	)
 }
+
+export default ToolActivityPill

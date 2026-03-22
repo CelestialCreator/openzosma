@@ -1,12 +1,12 @@
 "use client"
 
-import { MessageResponse } from "@/src/components/ai-elements/message"
 import { Avatar, AvatarFallback } from "@/src/components/ui/avatar"
 import { IconRobot, IconUser } from "@tabler/icons-react"
 import { DownloadIcon, FileIcon } from "lucide-react"
+import RenderAgentContent from "./render-agent-content"
 import type { ChatAttachment, ChatMessage as ChatMessageType } from "./types"
 
-function formatsizebytes(bytes: number | null): string {
+const formatsizebytes = (bytes: number | null): string => {
 	if (!bytes) return ""
 	if (bytes < 1024) return `${bytes} B`
 	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
@@ -17,7 +17,7 @@ type AttachmentListProps = {
 	attachments: ChatAttachment[]
 }
 
-function AttachmentList({ attachments }: AttachmentListProps) {
+const AttachmentList = ({ attachments }: AttachmentListProps) => {
 	if (attachments.length === 0) return null
 
 	return (
@@ -57,7 +57,7 @@ type ChatMessageProps = {
 	sendername: string
 }
 
-export function ChatMessage({ message, sendername }: ChatMessageProps) {
+const ChatMessage = ({ message, sendername }: ChatMessageProps) => {
 	const isagent = message.sendertype === "agent"
 	const timestamp = new Date(message.createdat).toLocaleTimeString([], {
 		hour: "2-digit",
@@ -77,7 +77,7 @@ export function ChatMessage({ message, sendername }: ChatMessageProps) {
 					<span className="text-[10px] text-muted-foreground">{timestamp}</span>
 				</div>
 				{isagent ? (
-					<MessageResponse>{message.content}</MessageResponse>
+					<RenderAgentContent message={message} />
 				) : (
 					<p className="text-sm whitespace-pre-wrap">{message.content}</p>
 				)}
@@ -86,3 +86,5 @@ export function ChatMessage({ message, sendername }: ChatMessageProps) {
 		</div>
 	)
 }
+
+export default ChatMessage

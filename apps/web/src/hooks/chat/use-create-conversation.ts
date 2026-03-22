@@ -3,7 +3,7 @@ import chatService from "@/src/services/chat.services"
 import { QUERY_KEYS } from "@/src/utils/query-keys"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
-export const useCreateConversation = () => {
+const useCreateConversation = () => {
 	const queryClient = useQueryClient()
 
 	return useMutation({
@@ -13,3 +13,5 @@ export const useCreateConversation = () => {
 		},
 	})
 }
+
+export default useCreateConversation

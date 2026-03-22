@@ -5,22 +5,19 @@ import { IconSparkles } from "@tabler/icons-react"
 import { AnimatePresence, motion } from "framer-motion"
 import { useParams } from "next/navigation"
 import { useRef } from "react"
-import { ChatHeader } from "./chat-header"
-import { ChatMessage } from "./chat-message"
-import { useChatStream } from "./hooks/use-chat-stream"
-import { useConversation } from "./hooks/use-conversation"
+import ChatHeader from "./chat-header"
+import ChatMessage from "./chat-message"
+import useChatStream from "./hooks/use-chat-stream"
+import useConversation from "./hooks/use-conversation"
 import PromptInput from "./prompt-input"
-import { StreamingResponse } from "./streaming-response"
+import StreamingResponse from "./streaming-response"
 
 const ChatView = () => {
 	const { conversationid } = useParams<{ conversationid: string }>()
 	const textarearef = useRef<HTMLTextAreaElement>(null)
 	const { conversation, participants, messages, loading } = useConversation(conversationid)
-	const { streaming, streamingcontent, streamingtoolcalls, streamingreasoning, handlesubmit } = useChatStream(
-		conversationid,
-		conversation,
-		participants,
-	)
+	const { streaming, streamingcontent, streamingtoolcalls, streamingsegments, streamingreasoning, handlesubmit } =
+		useChatStream(conversationid, conversation, participants)
 
 	const hasmessages = messages.length > 0 || streaming
 
@@ -94,6 +91,7 @@ const ChatView = () => {
 									<StreamingResponse
 										content={streamingcontent}
 										toolcalls={streamingtoolcalls}
+										segments={streamingsegments}
 										reasoning={streamingreasoning}
 										isstreaming={streaming}
 									/>

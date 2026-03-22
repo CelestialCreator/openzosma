@@ -9,7 +9,7 @@ type ChatHeaderProps = {
 	participants: ChatParticipant[]
 }
 
-export function ChatHeader({ conversation, participants }: ChatHeaderProps) {
+const ChatHeader = ({ conversation, participants }: ChatHeaderProps) => {
 	return (
 		<div className="flex items-center justify-between border-b px-6 py-3 shrink-0">
 			<div className="flex items-center gap-3">
@@ -33,3 +33,5 @@ export function ChatHeader({ conversation, participants }: ChatHeaderProps) {
 		</div>
 	)
 }
+
+export default ChatHeader

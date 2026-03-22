@@ -2,11 +2,11 @@
 
 import { Button } from "@/src/components/ui/button"
 import { Input } from "@/src/components/ui/input"
-import { useCreateConversation } from "@/src/hooks/chat/use-create-conversation"
-import { useDeleteConversation } from "@/src/hooks/chat/use-delete-conversation"
-import { useGetConversations } from "@/src/hooks/chat/use-get-conversations"
+import useDeleteConversation from "@/src/hooks/chat/use-delete-conversation"
+import useGetConversations from "@/src/hooks/chat/use-get-conversations"
 import { cn } from "@/src/lib/utils"
 import { IconMessageCircle, IconPlus, IconSearch, IconTrash } from "@tabler/icons-react"
+import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -19,22 +19,7 @@ const ChatSidebar = ({ onNavigate }: { onNavigate?: () => void }) => {
 	const activeconversationid = pathname.split("/chat/")[1] || null
 
 	const { data: conversations = [], isLoading: loading } = useGetConversations()
-	const createConversation = useCreateConversation()
 	const deleteConversation = useDeleteConversation()
-
-	const handlenewchat = async () => {
-		try {
-			const conversation = await createConversation.mutateAsync({
-				title: "New Conversation",
-				agentid: "dbchatagent",
-				agentname: "Open Zosma Agent",
-			})
-			router.push(`/chat/${conversation.id}`)
-			onNavigate?.()
-		} catch {
-			toast.error("Failed to create conversation")
-		}
-	}
 
 	const handledelete = async (conversationid: string, e: React.MouseEvent) => {
 		e.stopPropagation()
@@ -68,8 +53,10 @@ const ChatSidebar = ({ onNavigate }: { onNavigate?: () => void }) => {
 			{/* Header */}
 			<div className="flex items-center justify-between p-4 border-b shrink-0">
 				<h3 className="font-semibold text-sm">Conversations</h3>
-				<Button size="icon-sm" variant="ghost" onClick={handlenewchat}>
+				<Button size="icon-sm" variant="ghost">
+					<Link href="/chat">
 					<IconPlus className="size-4" />
+					</Link>
 				</Button>
 			</div>
 
@@ -98,9 +85,11 @@ const ChatSidebar = ({ onNavigate }: { onNavigate?: () => void }) => {
 								{search ? "No matching conversations" : "No conversations yet"}
 							</p>
 							{!search && (
-								<Button size="sm" variant="outline" onClick={handlenewchat} className="text-xs">
+								<Button size="sm" variant="outline" className="text-xs">
+									<Link href="/chat">
 									<IconPlus className="size-3" />
 									Start a conversation
+									</Link>
 								</Button>
 							)}
 						</div>

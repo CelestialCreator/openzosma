@@ -14,7 +14,7 @@ import {
 	PromptInputTextarea,
 	PromptInputTools,
 } from "@/src/components/ai-elements/prompt-input"
-import { useCreateConversation } from "@/src/hooks/chat/use-create-conversation"
+import useCreateConversation from "@/src/hooks/chat/use-create-conversation"
 import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
 import { useRef } from "react"
