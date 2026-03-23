@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { EventEmitter } from "node:events"
-import { mkdirSync } from "node:fs"
+import { cpSync, existsSync, mkdirSync } from "node:fs"
 import { join, resolve } from "node:path"
 import type { AgentProvider, AgentSession } from "@openzosma/agents"
 import { PiAgentProvider } from "@openzosma/agents"
@@ -80,6 +80,10 @@ export class SessionManager {
 		const memoryKey = agentConfigId ?? "default"
 		const memoryDir = join(workspaceRoot, "agents", memoryKey, "memory")
 		mkdirSync(memoryDir, { recursive: true })
+		const kbRoot = resolve(process.env.KNOWLEDGE_BASE_PATH ?? join(process.cwd(), "../../.knowledge-base"))
+		if (existsSync(kbRoot)) {
+			cpSync(kbRoot, join(sessionDir, ".knowledge-base"), { recursive: true })
+		}
 
 		// Use pre-resolved config when available to avoid a redundant DB fetch.
 		// Fall back to a DB lookup when only agentConfigId is given, or to
