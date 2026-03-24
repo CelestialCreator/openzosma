@@ -1,10 +1,11 @@
 "use client"
 
 import { Conversation, ConversationContent, ConversationScrollButton } from "@/src/components/ai-elements/conversation"
+import { consumePendingMessage } from "@/src/lib/pending-message"
 import { IconSparkles } from "@tabler/icons-react"
 import { AnimatePresence, motion } from "framer-motion"
 import { useParams } from "next/navigation"
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import ArtifactPreview from "./artifact-preview"
 import ChatHeader from "./chat-header"
 import ChatMessage from "./chat-message"
@@ -46,6 +47,14 @@ const ChatView = () => {
 	const handleClosePreview = useCallback(() => {
 		setPreviewartifact(null)
 	}, [])
+
+	useEffect(() => {
+		if (loading) return
+		const text = consumePendingMessage()
+		if (text) {
+			handlesubmit({ text, files: [] })
+		}
+	}, [loading, handlesubmit])
 
 	const hasmessages = messages.length > 0 || streaming
 

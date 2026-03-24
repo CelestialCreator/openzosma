@@ -3,9 +3,10 @@
 import { Button } from "@/src/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/src/components/ui/dialog"
 import { ScrollArea } from "@/src/components/ui/scroll-area"
+import { QUERY_KEYS } from "@/src/utils/query-keys"
+import { useQuery } from "@tanstack/react-query"
 import { DownloadIcon, ExternalLinkIcon } from "lucide-react"
 import { useParams } from "next/navigation"
-import { useEffect, useState } from "react"
 import type { FileArtifact } from "./types"
 
 type ArtifactPreviewProps = {
@@ -15,8 +16,6 @@ type ArtifactPreviewProps = {
 
 const ArtifactPreview = ({ artifact, onClose }: ArtifactPreviewProps) => {
 	const { conversationid } = useParams<{ conversationid: string }>()
-	const [textContent, setTextContent] = useState<string | null>(null)
-	const [loading, setLoading] = useState(false)
 
 	const previewUrl = artifact
 		? `/api/conversations/${conversationid}/artifacts/${encodeURIComponent(artifact.filename)}`
@@ -31,25 +30,15 @@ const ArtifactPreview = ({ artifact, onClose }: ArtifactPreviewProps) => {
 		artifact?.mediatype === "text/csv" ||
 		artifact?.mediatype === "application/json"
 
-	// Fetch text content for text-based previews
-	useEffect(() => {
-		if (!artifact || !previewUrl || !isText) {
-			setTextContent(null)
-			return
-		}
-
-		setLoading(true)
-		fetch(previewUrl)
-			.then((res) => res.text())
-			.then((text) => {
-				setTextContent(text)
-				setLoading(false)
-			})
-			.catch(() => {
-				setTextContent("Failed to load file content")
-				setLoading(false)
-			})
-	}, [artifact, previewUrl, isText])
+	const { data: textContent, isLoading: loading } = useQuery({
+		queryKey: [QUERY_KEYS.ARTIFACT_CONTENT, conversationid, artifact?.filename],
+		queryFn: async () => {
+			const res = await fetch(previewUrl!)
+			if (!res.ok) throw new Error("Failed to load file content")
+			return res.text()
+		},
+		enabled: artifact !== null && previewUrl !== null && isText,
+	})
 
 	return (
 		<Dialog open={artifact !== null} onOpenChange={(open) => !open && onClose()}>
