@@ -1,13 +1,14 @@
-import { randomBytes, createHash } from "node:crypto"
+import { createHash, randomBytes } from "node:crypto"
+import { buildDefaultAgentCard } from "@openzosma/a2a"
 import { Hono } from "hono"
 import { cors } from "hono/cors"
 import { streamSSE } from "hono/streaming"
+import type { Auth } from "@openzosma/auth"
 import type { Pool } from "@openzosma/db"
 import { agentConfigQueries, apiKeyQueries } from "@openzosma/db"
-import type { Auth } from "@openzosma/auth"
-import type { SessionManager } from "./session-manager.js"
-import { buildAgentCard, createA2ARouter } from "./a2a.js"
 import { createAuthMiddleware } from "./middleware/auth.js"
+import { createPerAgentRouter } from "./a2a.js"
+import type { SessionManager } from "./session-manager.js"
 
 export function createApp(sessionManager: SessionManager, pool?: Pool, auth?: Auth): Hono {
 	const app = new Hono()
@@ -23,18 +24,18 @@ export function createApp(sessionManager: SessionManager, pool?: Pool, auth?: Au
 
 	app.get("/health", (c) => c.json({ status: "ok" }))
 
-	// A2A Agent Card — dynamic if pool is available, empty skills fallback otherwise
+	// A2A default Agent Card — returns the first agent config's card
 	app.get("/.well-known/agent.json", async (c) => {
 		if (pool) {
-			const card = await buildAgentCard(pool)
-			return c.json(card)
+			const card = await buildDefaultAgentCard(pool)
+			if (card) return c.json(card)
 		}
 		return c.json({
 			name: "OpenZosma Agent",
 			description: "Self-hosted AI agent platform",
-			url: `${process.env["PUBLIC_URL"] ?? "http://localhost:4000"}/a2a`,
+			url: `${process.env.PUBLIC_URL ?? "http://localhost:4000"}/a2a/agents`,
 			version: "1.0.0",
-			capabilities: { streaming: true, pushNotifications: true, stateTransitionHistory: true },
+			capabilities: { streaming: true, pushNotifications: false, stateTransitionHistory: true },
 			skills: [],
 			authentication: { schemes: ["bearer"] },
 		})
@@ -46,8 +47,9 @@ export function createApp(sessionManager: SessionManager, pool?: Pool, auth?: Au
 	}
 
 	// A2A JSON-RPC 2.0 endpoint
+	// A2A per-agent routes
 	if (pool) {
-		app.route("/a2a", createA2ARouter(sessionManager, pool))
+		app.route("/a2a", createPerAgentRouter(sessionManager, pool))
 	}
 
 	// Auth middleware — protects all /api/v1/* routes
