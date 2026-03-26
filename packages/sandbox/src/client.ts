@@ -3,10 +3,13 @@ import { mkdtempSync, readdirSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { basename, join, relative } from "node:path"
 import { promisify } from "node:util"
+import { createLogger } from "@openzosma/logger"
 import { OpenShellCliError, SandboxNotFoundError, SandboxNotReadyError, SandboxTimeoutError } from "./errors.js"
 import type { ExecResult, SandboxConfig, SandboxInfo, SandboxPhase } from "./types.js"
 
 const execFileAsync = promisify(execFile)
+
+const log = createLogger({ component: "sandbox" })
 
 /** Default timeout for CLI commands (30 seconds). */
 const DEFAULT_CLI_TIMEOUT_MS = 30_000
@@ -448,7 +451,7 @@ export class OpenShellClient {
 				// Log entrypoint/CLI output for visibility
 				for (const line of chunk.split("\n")) {
 					if (line.trim()) {
-						console.log(`[openshell:bg] ${line}`)
+						log.debug(`[openshell:bg] ${line}`)
 					}
 				}
 			})
@@ -464,17 +467,14 @@ export class OpenShellClient {
 		}
 
 		child.on("error", (err) => {
-			console.error(`[openshell] Background spawn failed: ${err.message}`)
+			log.error("Background spawn failed", { error: err.message })
 		})
 
 		child.on("exit", (code, signal) => {
 			if (code !== null && code !== 0) {
-				console.error(
-					`[openshell] Background process exited with code ${code}`,
-					stderr ? `\nstderr: ${stderr.trim()}` : "",
-				)
+				log.error(`Background process exited with code ${code}`, stderr ? { stderr: stderr.trim() } : undefined)
 			} else if (signal) {
-				console.warn(`[openshell] Background process killed by signal ${signal}`)
+				log.warn(`Background process killed by signal ${signal}`)
 			}
 		})
 

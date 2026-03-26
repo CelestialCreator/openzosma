@@ -6,10 +6,13 @@ import type { AgentProvider, AgentSession } from "@openzosma/agents"
 import { PiAgentProvider } from "@openzosma/agents"
 import type { Pool } from "@openzosma/db"
 import { agentConfigQueries } from "@openzosma/db"
+import { createLogger } from "@openzosma/logger"
 import type { KBFileEntry, OrchestratorSessionManager } from "@openzosma/orchestrator"
 import { ArtifactManager } from "./artifact-manager.js"
 import { createSnapshot, detectChanges } from "./file-scanner.js"
 import type { FileArtifact, GatewayEvent, Session, SessionMessage } from "./types.js"
+
+const log = createLogger({ component: "gateway" })
 
 /**
  * Per-session state holding the agent session and gateway-level metadata.
@@ -110,7 +113,7 @@ export class SessionManager {
 				})
 			} catch (err) {
 				const msg = err instanceof Error ? err.message : String(err)
-				console.error(`[gateway] orchestrator.createSession threw: ${msg}`)
+				log.error("orchestrator.createSession threw", { error: msg })
 				throw err
 			}
 

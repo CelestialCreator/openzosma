@@ -1,4 +1,5 @@
 import type { AgentStreamEvent } from "@openzosma/agents"
+import { createLogger } from "@openzosma/logger"
 import type {
 	KBFileEntry,
 	KBListResponse,
@@ -8,6 +9,8 @@ import type {
 	SandboxSessionInfo,
 	SandboxSessionListResponse,
 } from "./types.js"
+
+const log = createLogger({ component: "orchestrator" })
 
 /** Default request timeout (30s). */
 const DEFAULT_TIMEOUT_MS = 30_000
@@ -218,7 +221,7 @@ export class SandboxHttpClient {
 							const event = JSON.parse(currentData) as AgentStreamEvent
 							yield event
 						} catch (e) {
-							console.error(`[sandbox-http-client] parseSSE error: ${e instanceof Error ? e.message : String(e)}`)
+							log.error("parseSSE error", { error: e instanceof Error ? e.message : String(e) })
 						}
 						currentData = ""
 					}

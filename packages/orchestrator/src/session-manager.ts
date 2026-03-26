@@ -3,9 +3,12 @@ import type { AgentStreamEvent } from "@openzosma/agents"
 import type { Pool } from "@openzosma/db"
 import { agentConfigQueries, userSandboxQueries } from "@openzosma/db"
 import type { UserSandbox } from "@openzosma/db"
+import { createLogger } from "@openzosma/logger"
 import type { SandboxHttpClient } from "./sandbox-http-client.js"
 import type { SandboxManager } from "./sandbox-manager.js"
 import type { KBFileEntry, OrchestratorSession } from "./types.js"
+
+const log = createLogger({ component: "orchestrator" })
 
 /**
  * Orchestrator session manager.
@@ -195,7 +198,7 @@ export class OrchestratorSessionManager {
 
 		const session = this.sessions.get(sessionId)
 		if (!session) {
-			console.error(`[orchestrator] session ${sessionId} could not be initialized`)
+			log.error("Session could not be initialized", { sessionId })
 			yield { type: "error", error: `Session ${sessionId} could not be initialized` }
 			return
 		}
@@ -223,7 +226,7 @@ export class OrchestratorSessionManager {
 		} catch (err) {
 			if (!signal?.aborted) {
 				const message = err instanceof Error ? err.message : "Unknown sandbox error"
-				console.error(`[orchestrator] sendMessage error: ${message}`)
+				log.error("sendMessage error", { error: message })
 				yield { type: "error", error: message }
 			}
 		}

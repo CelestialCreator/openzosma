@@ -1,4 +1,7 @@
+import { createLogger } from "@openzosma/logger"
 import type { SessionManager } from "./session-manager.js"
+
+const log = createLogger({ component: "gateway" })
 
 /**
  * Common contract for all channel adapters (Slack, WhatsApp, etc.).
@@ -51,7 +54,7 @@ export const initAdapters = async (sessionManager: SessionManager): Promise<Chan
 
 	for (const adapter of adapters) {
 		await adapter.init(sessionManager)
-		console.log(`Adapter started: ${adapter.name}`)
+		log.info(`Adapter started: ${adapter.name}`)
 	}
 
 	return adapters

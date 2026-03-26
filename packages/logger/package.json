@@ -1,5 +1,5 @@
 {
-	"name": "@openzosma/sandbox",
+	"name": "@openzosma/logger",
 	"version": "0.1.0",
 	"private": true,
 	"type": "module",
@@ -14,9 +14,6 @@
 	"scripts": {
 		"build": "tsc",
 		"check": "tsc --noEmit"
-	},
-	"dependencies": {
-		"@openzosma/logger": "workspace:*"
 	},
 	"devDependencies": {
 		"@types/node": "^22.15.2",

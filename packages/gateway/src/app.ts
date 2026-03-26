@@ -4,12 +4,15 @@ import type { Auth } from "@openzosma/auth"
 import type { Role } from "@openzosma/auth"
 import type { Pool } from "@openzosma/db"
 import { agentConfigQueries, apiKeyQueries } from "@openzosma/db"
+import { createLogger } from "@openzosma/logger"
 import { Hono } from "hono"
 import { cors } from "hono/cors"
 import { streamSSE } from "hono/streaming"
 import { createPerAgentRouter } from "./a2a.js"
 import { createAuthMiddleware, requirePermission } from "./middleware/auth.js"
 import type { SessionManager } from "./session-manager.js"
+
+const log = createLogger({ component: "gateway" })
 
 interface AppVariables {
 	userId: string
@@ -244,7 +247,7 @@ export const createApp = (sessionManager: SessionManager, pool?: Pool, auth?: Au
 			return c.json({ ok: true })
 		} catch (err) {
 			const message = err instanceof Error ? err.message : "Unknown error"
-			console.error(`[gateway] KB sync failed: ${message}`)
+			log.error("KB sync failed", { error: message })
 			return c.json({ error: { code: "SYNC_FAILED", message } }, 500)
 		}
 	})
@@ -266,7 +269,7 @@ export const createApp = (sessionManager: SessionManager, pool?: Pool, auth?: Au
 			return c.json({ files })
 		} catch (err) {
 			const message = err instanceof Error ? err.message : "Unknown error"
-			console.error(`[gateway] KB pull failed: ${message}`)
+			log.error("KB pull failed", { error: message })
 			return c.json({ error: { code: "PULL_FAILED", message } }, 500)
 		}
 	})

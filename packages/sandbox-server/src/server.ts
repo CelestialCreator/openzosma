@@ -1,9 +1,12 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs"
 import { join, normalize, relative, resolve } from "node:path"
+import { createLogger } from "@openzosma/logger"
 import { Hono } from "hono"
 import { streamSSE } from "hono/streaming"
 import { SandboxAgentManager } from "./agent.js"
 import type { CreateSessionRequest, KBFileEntry, SendMessageRequest } from "./types.js"
+
+const log = createLogger({ component: "sandbox-server" })
 
 /**
  * Create the Hono HTTP server that runs inside each sandbox container.
@@ -95,7 +98,7 @@ export function createSandboxApp(): Hono {
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : "Unknown error creating session"
 			const stack = err instanceof Error ? err.stack : undefined
-			console.error("[sandbox-server] POST /sessions failed:", message, stack ?? "")
+			log.error("POST /sessions failed", { error: message, stack })
 			return c.json({ error: message }, 500)
 		}
 	})

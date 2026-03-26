@@ -357,6 +357,9 @@ importers:
       '@mariozechner/pi-coding-agent':
         specifier: ^0.61.0
         version: 0.61.0(ws@8.19.0)(zod@4.3.6)
+      '@openzosma/logger':
+        specifier: workspace:*
+        version: link:../logger
       '@openzosma/memory':
         specifier: workspace:*
         version: link:../memory
@@ -413,6 +416,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@openzosma/logger':
+        specifier: workspace:*
+        version: link:../logger
       db-migrate:
         specifier: ^0.11.14
         version: 0.11.14
@@ -456,6 +462,9 @@ importers:
       '@openzosma/grpc':
         specifier: workspace:*
         version: link:../grpc
+      '@openzosma/logger':
+        specifier: workspace:*
+        version: link:../logger
       '@openzosma/orchestrator':
         specifier: workspace:*
         version: link:../orchestrator
@@ -493,6 +502,9 @@ importers:
       '@grpc/grpc-js':
         specifier: ^1.12.6
         version: 1.14.3
+      '@openzosma/logger':
+        specifier: workspace:*
+        version: link:../logger
       '@protobuf-ts/grpc-transport':
         specifier: ^2.9.6
         version: 2.11.1(@grpc/grpc-js@1.14.3)
@@ -516,8 +528,20 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
 
+  packages/logger:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.15.2
+        version: 22.19.15
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+
   packages/memory:
     dependencies:
+      '@openzosma/logger':
+        specifier: workspace:*
+        version: link:../logger
       pi-extension-observational-memory:
         specifier: ^0.1.3
         version: 0.1.3(@mariozechner/pi-ai@0.61.1(ws@8.19.0)(zod@4.3.6))(@mariozechner/pi-coding-agent@0.61.0(ws@8.19.0)(zod@4.3.6))(@mariozechner/pi-tui@0.61.1)
@@ -543,6 +567,9 @@ importers:
       '@openzosma/db':
         specifier: workspace:*
         version: link:../db
+      '@openzosma/logger':
+        specifier: workspace:*
+        version: link:../logger
       '@openzosma/sandbox':
         specifier: workspace:*
         version: link:../sandbox
@@ -558,6 +585,10 @@ importers:
         version: 5.9.3
 
   packages/sandbox:
+    dependencies:
+      '@openzosma/logger':
+        specifier: workspace:*
+        version: link:../logger
     devDependencies:
       '@types/node':
         specifier: ^22.15.2
@@ -574,6 +605,9 @@ importers:
       '@openzosma/agents':
         specifier: workspace:*
         version: link:../agents
+      '@openzosma/logger':
+        specifier: workspace:*
+        version: link:../logger
       hono:
         specifier: ^4.7.6
         version: 4.12.8
