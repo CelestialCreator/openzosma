@@ -1,14 +1,7 @@
 import fs from "node:fs"
 import path from "node:path"
+import { resolveSafe } from "@/src/lib/knowledge-base"
 import { type NextRequest, NextResponse } from "next/server"
-
-const KB_ROOT = process.env.KNOWLEDGE_BASE_PATH ?? path.join(process.cwd(), "../../.knowledge-base")
-
-const resolveSafe = (filePath: string): string | null => {
-	const resolved = path.resolve(KB_ROOT, filePath)
-	if (!resolved.startsWith(path.resolve(KB_ROOT))) return null
-	return resolved
-}
 
 const GET = async (request: NextRequest) => {
 	const filePath = request.nextUrl.searchParams.get("path")

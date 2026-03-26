@@ -1,14 +1,7 @@
 import fs from "node:fs"
 import path from "node:path"
+import { resolveSafe } from "@/src/lib/knowledge-base"
 import { type NextRequest, NextResponse } from "next/server"
-
-const KB_ROOT = process.env.KNOWLEDGE_BASE_PATH ?? path.join(process.cwd(), "../../.knowledge-base")
-
-const resolveSafe = (p: string): string | null => {
-	const resolved = path.resolve(KB_ROOT, p)
-	if (!resolved.startsWith(path.resolve(KB_ROOT))) return null
-	return resolved
-}
 
 const PATCH = async (request: NextRequest) => {
 	const body = (await request.json()) as { oldPath: string; newPath: string }

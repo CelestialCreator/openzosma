@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { EventEmitter } from "node:events"
-import { cpSync, existsSync, mkdirSync } from "node:fs"
+import { mkdirSync, symlinkSync } from "node:fs"
 import { join, resolve } from "node:path"
 import type { AgentProvider, AgentSession } from "@openzosma/agents"
 import { PiAgentProvider } from "@openzosma/agents"
@@ -148,10 +148,11 @@ export class SessionManager {
 		const memoryKey = agentConfigId ?? "default"
 		const memoryDir = join(workspaceRoot, "agents", memoryKey, "memory")
 		mkdirSync(memoryDir, { recursive: true })
-		const kbRoot = resolve(process.env.KNOWLEDGE_BASE_PATH ?? join(process.cwd(), "../../.knowledge-base"))
-		if (existsSync(kbRoot)) {
-			cpSync(kbRoot, join(sessionDir, ".knowledge-base"), { recursive: true })
-		}
+		// Symlink the knowledge base into the session directory so that agent
+		// edits are immediately visible in the dashboard and vice-versa.
+		const kbRoot = resolve(process.env.KNOWLEDGE_BASE_PATH || join(process.cwd(), "../../.knowledge-base"))
+		mkdirSync(kbRoot, { recursive: true })
+		symlinkSync(kbRoot, join(sessionDir, ".knowledge-base"))
 
 		let agentConfig: { provider?: string; model?: string; systemPrompt?: string; toolsEnabled?: string[] } = {}
 		if (resolvedConfig) {
@@ -210,6 +211,67 @@ export class SessionManager {
 		this.emitters.delete(id)
 		this.artifactManager.deleteArtifacts(id)
 		return this.sessions.delete(id)
+	}
+
+	/**
+	 * Destroy the sandbox for a user.
+	 *
+	 * Only meaningful in orchestrator mode. Delegates to
+	 * OrchestratorSessionManager.destroyUserSandbox(), which tears down
+	 * the OpenShell pod, removes the DB record, and clears session state.
+	 * The next request from this user will create a fresh sandbox.
+	 *
+	 * In local mode this is a no-op (returns false).
+	 */
+	async destroySandbox(userId: string): Promise<boolean> {
+		if (!this.orchestrator) {
+			return false
+		}
+
+		// Remove local gateway session state for this user
+		for (const [id, state] of this.sessions) {
+			if (state.session.messages.length >= 0) {
+				// We don't have userId on SessionState, so we clear all sessions
+				// that the orchestrator also tracks for this user.
+				const orchSession = this.orchestrator.getSession(id)
+				if (orchSession && orchSession.userId === userId) {
+					this.emitters.delete(id)
+					this.artifactManager.deleteArtifacts(id)
+					this.sessions.delete(id)
+				}
+			}
+		}
+
+		await this.orchestrator.destroyUserSandbox(userId)
+		return true
+	}
+
+	/**
+	 * Get sandbox info for a user.
+	 *
+	 * Returns the sandbox DB record in orchestrator mode, or null in local mode.
+	 */
+	async getSandboxInfo(userId: string): Promise<{
+		sandboxName: string
+		status: string
+		createdAt: string
+		lastActiveAt: string
+	} | null> {
+		if (!this.orchestrator) {
+			return null
+		}
+
+		const record = await this.orchestrator.getUserSandboxInfo(userId)
+		if (!record) {
+			return null
+		}
+
+		return {
+			sandboxName: record.sandboxName,
+			status: record.status,
+			createdAt: record.createdAt.toISOString(),
+			lastActiveAt: record.lastActiveAt.toISOString(),
+		}
 	}
 
 	/**

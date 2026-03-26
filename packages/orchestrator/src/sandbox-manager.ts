@@ -424,6 +424,21 @@ export class SandboxManager {
 			await this.openshell.injectEnv(record.sandboxName, sandboxEnv)
 			console.log("[orchestrator] .env injected successfully")
 
+			// Upload knowledge base content into the sandbox so the agent can
+			// access KB files the user created via the dashboard.  This is
+			// best-effort -- the sandbox still functions without KB content.
+			const kbRoot = resolve(process.env.KNOWLEDGE_BASE_PATH || join(findWorkspaceRoot(), ".knowledge-base"))
+			if (existsSync(kbRoot)) {
+				try {
+					console.log(`[orchestrator] Uploading knowledge base from ${kbRoot} to ${record.sandboxName}`)
+					await this.openshell.upload(record.sandboxName, kbRoot, "/workspace/")
+					console.log("[orchestrator] Knowledge base uploaded successfully")
+				} catch (err) {
+					const msg = err instanceof Error ? err.message : String(err)
+					console.warn(`[orchestrator] Failed to upload knowledge base (non-fatal): ${msg}`)
+				}
+			}
+
 			// Wait for the sandbox-server to become healthy. After env
 			// injection the entrypoint sources .env and starts Node. We
 			// poll the /health endpoint until it responds (or timeout).

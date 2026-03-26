@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto"
 import type { AgentStreamEvent } from "@openzosma/agents"
 import type { Pool } from "@openzosma/db"
-import { agentConfigQueries } from "@openzosma/db"
+import { agentConfigQueries, userSandboxQueries } from "@openzosma/db"
+import type { UserSandbox } from "@openzosma/db"
 import type { SandboxHttpClient } from "./sandbox-http-client.js"
 import type { SandboxManager } from "./sandbox-manager.js"
 import type { OrchestratorSession } from "./types.js"
@@ -144,6 +145,28 @@ export class OrchestratorSessionManager {
 	}
 
 	// -----------------------------------------------------------------------
+	// Sandbox lifecycle
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Destroy the sandbox for a user. Removes the OpenShell pod, DB record,
+	 * and all in-memory session state associated with the user.
+	 *
+	 * The next request from this user will trigger a fresh sandbox creation
+	 * (which includes uploading the latest knowledge base content).
+	 */
+	async destroyUserSandbox(userId: string): Promise<void> {
+		// Remove all sessions belonging to this user from the registry
+		for (const [sessionId, session] of this.sessions) {
+			if (session.userId === userId) {
+				this.sessions.delete(sessionId)
+			}
+		}
+
+		await this.sandboxManager.destroySandbox(userId)
+	}
+
+	// -----------------------------------------------------------------------
 	// Message handling
 	// -----------------------------------------------------------------------
 
@@ -246,5 +269,13 @@ export class OrchestratorSessionManager {
 	 */
 	get activeSessionCount(): number {
 		return this.sessions.size
+	}
+
+	/**
+	 * Get the sandbox DB record for a user.
+	 * Returns null if the user has no sandbox.
+	 */
+	async getUserSandboxInfo(userId: string): Promise<UserSandbox | null> {
+		return userSandboxQueries.getByUserId(this.pool, userId)
 	}
 }

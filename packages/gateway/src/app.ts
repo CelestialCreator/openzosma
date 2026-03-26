@@ -176,6 +176,38 @@ export const createApp = (sessionManager: SessionManager, pool?: Pool, auth?: Au
 	})
 
 	// -----------------------------------------------------------------------
+	// Sandbox management routes
+	// -----------------------------------------------------------------------
+
+	app.get("/api/v1/sandbox", requirePermission("sandboxes", "read"), async (c) => {
+		const userId = c.get("userId") as string | undefined
+		if (!userId) {
+			return c.json({ error: "userId is required (session auth only)" }, 400)
+		}
+
+		const info = await sessionManager.getSandboxInfo(userId)
+		if (!info) {
+			return c.json({ sandbox: null })
+		}
+
+		return c.json({ sandbox: info })
+	})
+
+	app.delete("/api/v1/sandbox", requirePermission("sandboxes", "delete"), async (c) => {
+		const userId = c.get("userId") as string | undefined
+		if (!userId) {
+			return c.json({ error: "userId is required (session auth only)" }, 400)
+		}
+
+		const destroyed = await sessionManager.destroySandbox(userId)
+		if (!destroyed) {
+			return c.json({ error: "Sandbox destruction is only available in orchestrator mode" }, 400)
+		}
+
+		return c.json({ ok: true })
+	})
+
+	// -----------------------------------------------------------------------
 	// Agent config routes (require DB pool)
 	// -----------------------------------------------------------------------
 
