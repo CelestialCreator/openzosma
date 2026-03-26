@@ -105,7 +105,7 @@ Agents don't replace your team. They handle the routine lookups, status checks, 
 
 <div align="center">
   <h3>Watch: Set up OpenZosma in under 2 minutes</h3>
-  <video src="assets/setup-demo.mp4" width="100%" autoplay loop muted playsinline></video>
+  <img src="assets/setup-demo.gif" alt="Setup demo" width="100%" />
 </div>
 
 ### Key Features
