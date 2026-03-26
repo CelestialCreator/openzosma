@@ -1,0 +1,41 @@
+{
+	"name": "create-openzosma",
+	"version": "0.1.0",
+	"description": "Interactive setup CLI for OpenZosma -- self-hosted AI agent platform",
+	"type": "module",
+	"license": "Apache-2.0",
+	"bin": {
+		"create-openzosma": "./dist/index.js"
+	},
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"files": ["dist"],
+	"keywords": ["openzosma", "ai", "agent", "setup", "cli", "create"],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/zosmaai/openzosma.git",
+		"directory": "packages/create-openzosma"
+	},
+	"engines": {
+		"node": ">=22"
+	},
+	"scripts": {
+		"build": "tsc",
+		"check": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@clack/prompts": "^0.10.0",
+		"execa": "^9.5.2",
+		"picocolors": "^1.1.1"
+	},
+	"devDependencies": {
+		"@types/node": "^22.15.2",
+		"typescript": "^5.7.3"
+	}
+}
