@@ -9,7 +9,6 @@ import {
 } from "@mariozechner/pi-coding-agent"
 import { bootstrapMemory } from "@openzosma/memory"
 import { DEFAULT_SYSTEM_PROMPT } from "./pi/config.js"
-import { bootstrapPiExtensions } from "./pi/extensions/index.js"
 import { resolveModel } from "./pi/model.js"
 import { createDefaultTools } from "./pi/tools.js"
 import type { AgentMessage, AgentProvider, AgentSession, AgentSessionOpts, AgentStreamEvent } from "./types.js"
@@ -35,7 +34,7 @@ class PiAgentSession implements AgentSession {
 	private messages: AgentMessage[] = []
 
 	constructor(opts: AgentSessionOpts) {
-		const memoryResult = bootstrapMemory({
+		bootstrapMemory({
 			workspaceDir: opts.workspaceDir,
 			memoryDir: opts.memoryDir,
 		})
@@ -45,11 +44,8 @@ class PiAgentSession implements AgentSession {
 			model: opts.model,
 			baseUrl: opts.baseUrl,
 		})
-		const { extensionPaths } = bootstrapPiExtensions()
-
 		const resourceLoader = new DefaultResourceLoader({
 			cwd: opts.workspaceDir,
-			additionalExtensionPaths: [...extensionPaths, ...memoryResult.paths],
 			systemPrompt: opts.systemPrompt ?? DEFAULT_SYSTEM_PROMPT,
 		})
 
