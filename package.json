@@ -21,13 +21,15 @@
 		"db:migrate:down": "pnpm --filter @openzosma/db migrate:down",
 		"db:migrate:auth": "pnpm --filter @openzosma/db migrate:auth",
 		"db:migrate:create": "pnpm --filter @openzosma/db migrate:create",
-		"proto:generate": "pnpm --filter @openzosma/grpc generate"
+		"proto:generate": "pnpm --filter @openzosma/grpc generate",
+		"setup": "tsx packages/create-openzosma/src/index.ts --post-clone"
 	},
 	"pnpm": {
 		"onlyBuiltDependencies": ["@biomejs/biome", "esbuild", "protobufjs", "sharp"]
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
+		"tsx": "^4.21.0",
 		"turbo": "^2.8.19"
 	}
 }
