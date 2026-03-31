@@ -1,7 +1,27 @@
-import type { ChannelAdapter } from "@openzosma/gateway/adapters"
-import type { SessionManager } from "@openzosma/gateway/session-manager"
-import type { GatewayEvent } from "@openzosma/gateway/types"
 import { type AllMiddlewareArgs, App, type SlackEventMiddlewareArgs } from "@slack/bolt"
+
+// ─── Inlined types (originally from @openzosma/gateway) ──────────────────────
+// These are duplicated here to avoid a circular workspace dependency:
+// adapter-slack → gateway → adapter-slack.
+
+interface ChannelAdapter {
+	readonly name: string
+	init(sessionManager: SlackSessionManager): Promise<void>
+	shutdown(): Promise<void>
+}
+
+interface SlackSessionManager {
+	createSession(userId?: string, agentConfigId?: string): Promise<{ id: string }>
+	sendMessage(sessionId: string, content: string, signal?: AbortSignal): AsyncIterable<SlackGatewayEvent>
+}
+
+interface SlackGatewayEvent {
+	type: string
+	text?: string
+	error?: string
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export interface SlackAdapterConfig {
 	botToken: string
@@ -19,7 +39,7 @@ type MessageEvent = SlackEventMiddlewareArgs<"message"> & AllMiddlewareArgs
 export class SlackAdapter implements ChannelAdapter {
 	readonly name = "slack"
 	private app: App
-	private sessionManager: SessionManager | undefined
+	private sessionManager: SlackSessionManager | undefined
 	private sessionMap = new Map<string, string>()
 
 	constructor(config: SlackAdapterConfig) {
@@ -30,7 +50,7 @@ export class SlackAdapter implements ChannelAdapter {
 		})
 	}
 
-	async init(sessionManager: SessionManager): Promise<void> {
+	async init(sessionManager: SlackSessionManager): Promise<void> {
 		this.sessionManager = sessionManager
 		this.app.message(this.handleMessage.bind(this))
 		await this.app.start()
@@ -71,12 +91,11 @@ export class SlackAdapter implements ChannelAdapter {
 		let fullResponse = ""
 
 		for await (const event of events) {
-			const typed = event as GatewayEvent
-			if (typed.type === "message_update" && typed.text) {
-				fullResponse += typed.text
+			if (event.type === "message_update" && event.text) {
+				fullResponse += event.text
 			}
-			if (typed.type === "error") {
-				await say({ text: `Error: ${typed.error ?? "unknown error"}`, thread_ts: threadTs })
+			if (event.type === "error") {
+				await say({ text: `Error: ${event.error ?? "unknown error"}`, thread_ts: threadTs })
 				return
 			}
 		}
@@ -86,3 +105,4 @@ export class SlackAdapter implements ChannelAdapter {
 		}
 	}
 }
+

@@ -5,7 +5,7 @@ import { dirname, join, resolve } from "node:path"
 import type { AgentProvider, AgentSession } from "@openzosma/agents"
 import { PiAgentProvider } from "@openzosma/agents"
 import type { Pool } from "@openzosma/db"
-import { agentConfigQueries } from "@openzosma/db"
+import { agentConfigQueries, integrationQueries } from "@openzosma/db"
 import { createLogger } from "@openzosma/logger"
 import type { KBFileEntry, OrchestratorSessionManager } from "@openzosma/orchestrator"
 import type { FileArtifact, GatewayEvent, Session, SessionMessage, WsAttachment } from "./types.js"
@@ -182,11 +182,40 @@ export class SessionManager {
 		})
 		await prevLock
 
+		// Build integration context when a DB pool is available.
+		let systemPromptSuffix: string | undefined
+		if (this.pool) {
+			try {
+				const integrations = await integrationQueries.listIntegrations(this.pool)
+				if (integrations.length > 0) {
+					const lines = [
+						"## Available database integrations",
+						"",
+						"The following database integrations are configured and can be queried on behalf of the user.",
+						"",
+						...integrations.map((i) => `- ${i.name} (${i.type}) — id: ${i.id}`),
+						"",
+						"Rules for database queries:",
+						"1. ALWAYS call list_database_schemas first before writing any SQL query.",
+						"   Never assume table or column names — they vary per integration.",
+						"2. Use only tables and columns returned by list_database_schemas.",
+						"3. If the user's question maps to data that exists, write and run the query.",
+						"   If no matching table exists, say so clearly rather than guessing.",
+					]
+					systemPromptSuffix = lines.join("\n")
+				}
+			} catch (err) {
+				log.warn("Failed to load integrations for session context", { error: (err as Error).message })
+			}
+		}
+
 		const agentSession = this.provider.createSession({
 			sessionId: session.id,
 			workspaceDir: sessionDir,
 			memoryDir,
 			...agentConfig,
+			dbPool: this.pool ?? undefined,
+			systemPromptSuffix,
 		})
 
 		// Release the lock after a short delay to let the extension loader read

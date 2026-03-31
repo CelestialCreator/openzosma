@@ -1,5 +1,5 @@
 {
-	"name": "@openzosma/adapter-slack",
+	"name": "@openzosma/integrations",
 	"version": "0.1.0",
 	"private": true,
 	"type": "module",
@@ -17,10 +17,12 @@
 	},
 	"dependencies": {
 		"@openzosma/db": "workspace:*",
-		"@slack/bolt": "^4.3.0"
+		"@openzosma/logger": "workspace:*",
+		"mysql2": "^3.11.0",
+		"pg": "^8.13.1"
 	},
 	"devDependencies": {
-		"@types/node": "^22.15.2",
+		"@types/pg": "^8.11.10",
 		"typescript": "^5.7.3"
 	}
 }
