@@ -32,19 +32,52 @@ export type BuiltInToolName =
 	| "report_generate"
 	| "report_execute_code"
 
+// Built-in AgentTool entries (accepted by createAgentSession's `tools` field).
+const BUILTIN_TOOL_NAMES = ["read", "bash", "edit", "write", "grep", "find", "ls"] as const
+type BuiltinToolName = (typeof BUILTIN_TOOL_NAMES)[number]
+
+// Custom ToolDefinition entries (accepted by createAgentSession's `customTools` field).
+const CUSTOM_TOOL_NAMES = ["report_list_templates", "report_generate", "report_execute_code"] as const
+type CustomToolName = (typeof CUSTOM_TOOL_NAMES)[number]
+
+/**
+ * Create the built-in AgentTool instances (read, bash, edit, write, grep, find, ls).
+ * These go in `tools` when calling createAgentSession.
+ *
+ * @param workspaceDir - Root workspace directory.
+ * @param toolsEnabled - Optional allow-list of tool names. If omitted, all tools are returned.
+ */
 export const createDefaultTools = (workspaceDir: string, toolsEnabled?: string[]) => {
 	const allTools = [
-		{ name: "read", tool: createReadTool(workspaceDir) },
-		{ name: "bash", tool: createBashTool(workspaceDir) },
-		{ name: "edit", tool: createEditTool(workspaceDir) },
-		{ name: "write", tool: createWriteTool(workspaceDir) },
-		{ name: "grep", tool: createGrepTool(workspaceDir) },
-		{ name: "find", tool: createFindTool(workspaceDir) },
-		{ name: "ls", tool: createLsTool(workspaceDir) },
-		{ name: "report_list_templates", tool: createReportListTemplatesTool() },
-		{ name: "report_generate", tool: createReportGenerateTool() },
-		{ name: "report_execute_code", tool: createReportExecuteCodeTool() },
-	] as const
+		{ name: "read" as BuiltinToolName, tool: createReadTool(workspaceDir) },
+		{ name: "bash" as BuiltinToolName, tool: createBashTool(workspaceDir) },
+		{ name: "edit" as BuiltinToolName, tool: createEditTool(workspaceDir) },
+		{ name: "write" as BuiltinToolName, tool: createWriteTool(workspaceDir) },
+		{ name: "grep" as BuiltinToolName, tool: createGrepTool(workspaceDir) },
+		{ name: "find" as BuiltinToolName, tool: createFindTool(workspaceDir) },
+		{ name: "ls" as BuiltinToolName, tool: createLsTool(workspaceDir) },
+	]
+
+	if (!toolsEnabled || toolsEnabled.length === 0) {
+		return allTools.map((t) => t.tool)
+	}
+
+	const allow = new Set(toolsEnabled)
+	return allTools.filter((t) => allow.has(t.name)).map((t) => t.tool)
+}
+
+/**
+ * Create the report ToolDefinition instances (report_list_templates, report_generate, report_execute_code).
+ * These go in `customTools` when calling createAgentSession.
+ *
+ * @param toolsEnabled - Optional allow-list of tool names. If omitted, all report tools are returned.
+ */
+export const createReportTools = (toolsEnabled?: string[]): ToolDefinition[] => {
+	const allTools = [
+		{ name: "report_list_templates" as CustomToolName, tool: createReportListTemplatesTool() },
+		{ name: "report_generate" as CustomToolName, tool: createReportGenerateTool() },
+		{ name: "report_execute_code" as CustomToolName, tool: createReportExecuteCodeTool() },
+	]
 
 	if (!toolsEnabled || toolsEnabled.length === 0) {
 		return allTools.map((t) => t.tool)
