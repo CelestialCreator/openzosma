@@ -118,6 +118,9 @@ RUN npm install -g @mariozechner/pi-coding-agent
 # The CLI reads SLACK_TOKEN from the environment (injected via .env by the orchestrator).
 RUN npm install -g agent-slack
 
+# Install Node report libraries available to agent-generated code.
+RUN npm install -g chart.js chartjs-node-canvas d3 exceljs
+
 # Copy extension manifest and install script before switching to sandbox user
 COPY packages/agents/extensions.json /tmp/extensions.json
 COPY infra/openshell/scripts/install-extensions.mjs /tmp/install-extensions.mjs
