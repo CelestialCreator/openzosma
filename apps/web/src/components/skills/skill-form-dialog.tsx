@@ -108,7 +108,7 @@ const SkillFormDialog = ({ open, onOpenChange, skill }: SkillFormDialogProps) =>
 							value={content}
 							onChange={(e) => setContent(e.target.value)}
 							placeholder={"# My Skill\n\nInstructions for the agent..."}
-							className="font-mono text-sm min-h-[200px]"
+							className="font-mono text-sm min-h-[200px] max-h-96 overflow-y-scroll"
 							rows={10}
 						/>
 					</div>

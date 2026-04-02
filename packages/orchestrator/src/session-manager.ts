@@ -104,10 +104,16 @@ export class OrchestratorSessionManager {
 		// Create the session inside the sandbox via HTTP
 		const client = this.sandboxManager.getHttpClient(userId)
 
-		// Load and inject skills into sandbox
+		// Load and inject skills into sandbox.
+		// OPENZOSMA_INJECT_ALL_SKILLS=true bypasses agent config skill assignment and loads every skill
+		// from the DB — useful during local development before agent config UI is wired up.
+		let skills: Skill[] = []
 		if (agentConfigRecord?.skills && agentConfigRecord.skills.length > 0) {
-			const skills = await skillQueries.getSkillsByIds(this.pool, agentConfigRecord.skills)
-
+			skills = await skillQueries.getSkillsByIds(this.pool, agentConfigRecord.skills)
+		} else if (process.env.OPENZOSMA_INJECT_ALL_SKILLS === "true") {
+			skills = await skillQueries.listSkills(this.pool)
+		}
+		if (skills.length > 0) {
 			for (const skill of skills) {
 				if (skill.source !== "file" || !skill.content) continue
 				try {
