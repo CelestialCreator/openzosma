@@ -3,9 +3,9 @@ import { QUERY_KEYS } from "@/src/utils/query-keys"
 import { useQuery } from "@tanstack/react-query"
 
 export const useGetSkills = () => {
-	const { SKILLS } = QUERY_KEYS
+	const { SKILL } = QUERY_KEYS
 	return useQuery({
-		queryKey: [SKILLS],
+		queryKey: [SKILL],
 		queryFn: () => skillsService.getSkills(),
 	})
 }

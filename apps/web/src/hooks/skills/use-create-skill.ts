@@ -5,12 +5,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 const useCreateSkill = () => {
 	const queryClient = useQueryClient()
-	const { SKILLS } = QUERY_KEYS
+	const { SKILL } = QUERY_KEYS
 
 	return useMutation({
 		mutationFn: (payload: CreateSkillPayload) => skillsService.createSkill(payload),
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: [SKILLS] })
+			queryClient.invalidateQueries({ queryKey: [SKILL] })
 		},
 	})
 }

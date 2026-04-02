@@ -22,9 +22,10 @@ const SkillFormDialog = ({ open, onOpenChange, skill }: SkillFormDialogProps) =>
 	const [name, setName] = useState("")
 	const [description, setDescription] = useState("")
 	const [content, setContent] = useState("")
+	const { id } = skill ?? {}
 
 	const createMutation = useCreateSkill()
-	const updateMutation = useUpdateSkill()
+	const updateMutation = useUpdateSkill(id!)
 
 	const isEditing = !!skill
 	const saving = createMutation.isPending || updateMutation.isPending
@@ -46,7 +47,6 @@ const SkillFormDialog = ({ open, onOpenChange, skill }: SkillFormDialogProps) =>
 		try {
 			if (isEditing) {
 				await updateMutation.mutateAsync({
-					id: skill.id,
 					name: name.trim(),
 					description: description.trim(),
 					content,

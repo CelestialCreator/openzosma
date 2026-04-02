@@ -21,13 +21,13 @@ interface SkillDeleteDialogProps {
 }
 
 const SkillDeleteDialog = ({ open, onOpenChange, skillId }: SkillDeleteDialogProps) => {
-	const deleteMutation = useDeleteSkill()
+	const deleteMutation = useDeleteSkill(skillId!)
 
 	const handleDelete = async () => {
 		if (!skillId) return
 
 		try {
-			await deleteMutation.mutateAsync(skillId)
+			await deleteMutation.mutateAsync()
 			toast.success("Skill deleted")
 			onOpenChange(false)
 		} catch (error) {
