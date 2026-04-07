@@ -91,7 +91,13 @@ const PromptInput = ({
 			<PromptInputComponent onSubmit={wrappedHandleSubmit} className="rounded-2xl border shadow-lg">
 				<PromptInputAttachments>{(file) => <PromptInputAttachment data={file} />}</PromptInputAttachments>
 				<PromptInputTextarea
-					placeholder={streaming ? "Type /btw to redirect, or queue a follow-up..." : hasmessages ? "Type a message..." : "Ask anything..."}
+					placeholder={
+						streaming
+							? "Type /btw to redirect, or queue a follow-up..."
+							: hasmessages
+								? "Type a message..."
+								: "Ask anything..."
+					}
 					ref={textarearef}
 					value={inputValue}
 					onChange={(e) => setInputValue(e.target.value)}

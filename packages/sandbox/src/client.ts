@@ -1,9 +1,4 @@
-import {
-	type ChildProcess,
-	execFile,
-	type StdioOptions,
-	spawn,
-} from "node:child_process"
+import { type ChildProcess, type StdioOptions, execFile, spawn } from "node:child_process"
 import { mkdtempSync, readdirSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { basename, join, relative } from "node:path"
@@ -88,12 +83,7 @@ export class OpenShellClient {
 		// Establish port forwarding in this same `sandbox create` session. A
 		// separate `openshell forward start` while this long-running create
 		// process is alive typically blocks until exec timeout (global CLI lock).
-		if (
-			config.command &&
-			config.command.length > 0 &&
-			config.agentPort != null &&
-			config.agentPort > 0
-		) {
+		if (config.command && config.command.length > 0 && config.agentPort != null && config.agentPort > 0) {
 			args.push("--forward", String(config.agentPort))
 		}
 		if (config.command) {
