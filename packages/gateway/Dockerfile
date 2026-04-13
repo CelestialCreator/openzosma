@@ -78,12 +78,13 @@ COPY --from=builder /deploy ./
 # Copy sandbox policies (needed by orchestrator to create sandboxes)
 COPY infra/openshell/policies/ ./policies/
 
-# OpenShell CLI binary (required for orchestrator sandbox mode).
-# The orchestrator spawns sandboxes via `openshell sandbox create/upload/forward`.
-# COPY from build context — the binary must be placed at infra/openshell/bin/openshell
-# before building. On hosts where openshell is installed: cp $(which openshell) infra/openshell/bin/
-COPY infra/openshell/bin/openshell /usr/local/bin/openshell
-RUN chmod +x /usr/local/bin/openshell
+# Install OpenShell CLI (required for orchestrator sandbox mode).
+# Downloaded from GitHub releases — statically linked musl binary, no runtime deps.
+RUN ARCH=$(uname -m | sed 's/amd64/x86_64/') && \
+    VERSION=$(curl -sI https://github.com/NVIDIA/OpenShell/releases/latest | grep -i ^location: | sed 's|.*/tag/||;s/\r//') && \
+    curl -LsSf "https://github.com/NVIDIA/OpenShell/releases/download/${VERSION}/openshell-${ARCH}-unknown-linux-musl.tar.gz" \
+      | tar xz -C /usr/local/bin openshell && \
+    chmod +x /usr/local/bin/openshell
 
 # Expose the gateway HTTP server port
 EXPOSE 3000
