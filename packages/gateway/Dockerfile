@@ -67,6 +67,7 @@ FROM node:22-slim
 
 # Runtime system dependencies only
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
