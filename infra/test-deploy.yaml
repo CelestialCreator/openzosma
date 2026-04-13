@@ -61,7 +61,12 @@ data:
   SANDBOX_AGENT_PORT: "8080"
   SANDBOX_READY_TIMEOUT_MS: "300000"
   SANDBOX_IDLE_SUSPEND_MS: "1800000"
-  OPENZOSMA_MODEL_PROVIDER: "anthropic"
+  OPENZOSMA_LOCAL_MODEL_URL: "http://llama-server.default.svc.cluster.local:8080/v1"
+  OPENZOSMA_LOCAL_MODEL_ID: "Qwopus3.5-27B-v3-Q8_0"
+  OPENZOSMA_LOCAL_MODEL_NAME: "Qwopus 3.5 27B"
+  OPENZOSMA_LOCAL_MODEL_API_KEY: "dummy"
+  OPENZOSMA_LOCAL_MODEL_CONTEXT_WINDOW: "131072"
+  OPENZOSMA_LOCAL_MODEL_MAX_TOKENS: "32768"
   NODE_ENV: "production"
 ---
 apiVersion: v1
@@ -74,7 +79,7 @@ stringData:
   DB_PASS: "openzosma"
   DATABASE_URL: "postgresql://openzosma:openzosma@loadsage-pg.db.svc.cluster.local:5432/openzosma"
   BETTER_AUTH_SECRET: "test-secret-at-least-32-chars-long-here"
-  ANTHROPIC_API_KEY: "REPLACE_ME"
+  OPENAI_API_KEY: "dummy"
 ---
 apiVersion: apps/v1
 kind: Deployment
