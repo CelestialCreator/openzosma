@@ -7,18 +7,22 @@ WORKDIR /app
 RUN npm install -g pnpm
 
 # Copy all package files for dependency resolution
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json turbo.json ./
 
 # Copy all packages and apps
 COPY packages/ ./packages/
 COPY apps/ ./apps/
-COPY turbo.json ./
 
 # Install all dependencies including workspace packages
 RUN pnpm install --frozen-lockfile
 
 # Build workspace dependencies that the web app imports at type-check time
-RUN pnpm run build
+RUN pnpm --filter @openzosma/logger run build && \
+    pnpm --filter @openzosma/memory run build && \
+    pnpm --filter @openzosma/db run build && \
+    pnpm --filter @openzosma/integrations run build && \
+    (pnpm --filter @openzosma/skill-reports run build || true) && \
+    pnpm --filter @openzosma/agents run build
 
 # Build the web application with standalone output
 ARG NEXT_PUBLIC_GATEWAY_URL=http://localhost:4000
