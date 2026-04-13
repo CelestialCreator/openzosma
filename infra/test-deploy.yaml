@@ -1,0 +1,202 @@
+---
+# Full end-to-end test deployment for issue #49
+# Deploy to default namespace, delete after testing
+# Uses orchestrator mode with sandbox credential injection
+
+# RBAC — gateway needs to manage sandbox pods via openshell CLI
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: test-gateway-sa
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: test-gateway-sandbox-manager
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/exec", "pods/log", "services", "configmaps", "secrets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["pods/portforward"]
+    verbs: ["create", "get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: test-gateway-sandbox-manager
+subjects:
+  - kind: ServiceAccount
+    name: test-gateway-sa
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: test-gateway-sandbox-manager
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test-openzosma-config
+  namespace: default
+data:
+  DB_HOST: "loadsage-pg.db.svc.cluster.local"
+  DB_PORT: "5432"
+  DB_NAME: "openzosma"
+  DB_USER: "openzosma"
+  GATEWAY_HOST: "0.0.0.0"
+  GATEWAY_PORT: "4000"
+  PUBLIC_URL: "http://test-gateway.default.svc.cluster.local:4000"
+  NEXT_PUBLIC_BASE_URL: "http://test-web.default.svc.cluster.local:3000"
+  NEXT_PUBLIC_GATEWAY_URL: "http://test-gateway.default.svc.cluster.local:4000"
+  AUTH_URL: "http://test-web.default.svc.cluster.local:3000"
+  # Orchestrator mode — uses OpenShell sandboxes
+  OPENZOSMA_SANDBOX_MODE: "orchestrator"
+  SANDBOX_IMAGE: "localhost:5000/openzosma-sandbox:test-creds"
+  SANDBOX_POLICY_PATH: "/app/policies/default.yaml"
+  SANDBOX_AGENT_PORT: "8080"
+  SANDBOX_READY_TIMEOUT_MS: "300000"
+  SANDBOX_IDLE_SUSPEND_MS: "1800000"
+  OPENZOSMA_MODEL_PROVIDER: "anthropic"
+  NODE_ENV: "production"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: test-openzosma-secrets
+  namespace: default
+type: Opaque
+stringData:
+  DB_PASS: "openzosma"
+  DATABASE_URL: "postgresql://openzosma:openzosma@loadsage-pg.db.svc.cluster.local:5432/openzosma"
+  BETTER_AUTH_SECRET: "test-secret-at-least-32-chars-long-here"
+  ANTHROPIC_API_KEY: "REPLACE_ME"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-gateway
+  namespace: default
+  labels:
+    app: test-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-gateway
+  template:
+    metadata:
+      labels:
+        app: test-gateway
+    spec:
+      serviceAccountName: test-gateway-sa
+      containers:
+        - name: gateway
+          image: localhost:5000/openzosma-gateway:test-creds
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 4000
+              name: http
+          env:
+            - name: HOME
+              value: /tmp
+          envFrom:
+            - configMapRef:
+                name: test-openzosma-config
+            - secretRef:
+                name: test-openzosma-secrets
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-gateway
+  namespace: default
+spec:
+  type: NodePort
+  selector:
+    app: test-gateway
+  ports:
+    - port: 4000
+      targetPort: 4000
+      nodePort: 30090
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-web
+  namespace: default
+  labels:
+    app: test-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-web
+  template:
+    metadata:
+      labels:
+        app: test-web
+    spec:
+      containers:
+        - name: web
+          image: localhost:5000/openzosma-web:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            - name: NEXT_PUBLIC_BASE_URL
+              value: "http://localhost:30091"
+            - name: NEXT_PUBLIC_GATEWAY_URL
+              value: "http://localhost:30090"
+            - name: AUTH_URL
+              value: "http://localhost:30091"
+            - name: NODE_ENV
+              value: "production"
+          envFrom:
+            - secretRef:
+                name: test-openzosma-secrets
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-web
+  namespace: default
+spec:
+  type: NodePort
+  selector:
+    app: test-web
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30091

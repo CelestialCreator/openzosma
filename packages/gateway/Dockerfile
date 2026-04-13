@@ -75,6 +75,14 @@ WORKDIR /app
 # Copy the self-contained deploy bundle (node_modules + dist, no symlinks)
 COPY --from=builder /deploy ./
 
+# Copy sandbox policies (needed by orchestrator to create sandboxes)
+COPY infra/openshell/policies/ ./policies/
+
+# Install OpenShell CLI (required for orchestrator sandbox mode).
+# The orchestrator spawns sandboxes via `openshell sandbox create/upload/forward`.
+RUN curl -LsSf https://raw.githubusercontent.com/NVIDIA/OpenShell/main/install.sh | sh \
+    || echo "OpenShell install failed — orchestrator mode will not work"
+
 # Expose the gateway HTTP server port
 EXPOSE 3000
 

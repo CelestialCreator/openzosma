@@ -193,7 +193,7 @@ async function queryPostgresql(config, query) {
 			client.release()
 		}
 	} catch (err) {
-		return { success: false, error: err.message, latencyMs: Date.now() - start }
+		return { success: false, error: err.message || String(err), latencyMs: Date.now() - start }
 	} finally {
 		await pool.end()
 	}
@@ -228,7 +228,7 @@ async function queryMysql(config, query) {
 		}
 	} catch (err) {
 		if (connection) await connection.query("ROLLBACK").catch(() => {})
-		return { success: false, error: err.message, latencyMs: Date.now() - start }
+		return { success: false, error: err.message || String(err), latencyMs: Date.now() - start }
 	} finally {
 		if (connection) await connection.end()
 	}

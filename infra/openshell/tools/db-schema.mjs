@@ -223,7 +223,7 @@ try {
 			process.exit(1)
 	}
 } catch (err) {
-	console.error(JSON.stringify({ success: false, error: err.message }))
+	console.error(JSON.stringify({ success: false, error: err.message || String(err) }))
 	process.exit(1)
 }
 
