@@ -78,10 +78,12 @@ COPY --from=builder /deploy ./
 # Copy sandbox policies (needed by orchestrator to create sandboxes)
 COPY infra/openshell/policies/ ./policies/
 
-# Install OpenShell CLI (required for orchestrator sandbox mode).
+# OpenShell CLI binary (required for orchestrator sandbox mode).
 # The orchestrator spawns sandboxes via `openshell sandbox create/upload/forward`.
-RUN curl -LsSf https://raw.githubusercontent.com/NVIDIA/OpenShell/main/install.sh | sh \
-    || echo "OpenShell install failed — orchestrator mode will not work"
+# COPY from build context — the binary must be placed at infra/openshell/bin/openshell
+# before building. On hosts where openshell is installed: cp $(which openshell) infra/openshell/bin/
+COPY infra/openshell/bin/openshell /usr/local/bin/openshell
+RUN chmod +x /usr/local/bin/openshell
 
 # Expose the gateway HTTP server port
 EXPOSE 3000
