@@ -17,7 +17,14 @@ COPY turbo.json ./
 # Install all dependencies including workspace packages
 RUN pnpm install --frozen-lockfile
 
+# Build workspace dependencies that the web app imports at type-check time
+RUN pnpm run build
+
 # Build the web application with standalone output
+ARG NEXT_PUBLIC_GATEWAY_URL=http://localhost:4000
+ARG NEXT_PUBLIC_BASE_URL=http://localhost:3000
+ENV NEXT_PUBLIC_GATEWAY_URL=$NEXT_PUBLIC_GATEWAY_URL
+ENV NEXT_PUBLIC_BASE_URL=$NEXT_PUBLIC_BASE_URL
 ENV NEXT_CONFIG_OUTPUT=standalone
 RUN pnpm --filter @openzosma/web build
 
