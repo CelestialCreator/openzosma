@@ -86,6 +86,8 @@ RUN npm install -g \
     chartjs-node-canvas \
     d3 \
     exceljs \
+    mysql2 \
+    pg \
     pi-interactive-shell
 
 # ---------------------------------------------------------------------------
@@ -173,6 +175,14 @@ RUN chown root:root -R ./policies/ && chmod 444 -R ./policies/
 # The agent reads these on demand to learn how to use CLI tools.
 COPY infra/openshell/skills/ ./skills/
 RUN chown root:root -R ./skills/ && chmod 444 -R ./skills/
+
+# Copy database CLI tools and create symlinks in PATH.
+# These read DB_* env vars injected by the orchestrator and execute
+# read-only queries or introspect schemas against user databases.
+COPY infra/openshell/tools/ ./db-tools/
+RUN chmod +x ./db-tools/*.mjs && \
+    ln -s /app/db-tools/db-query.mjs /usr/local/bin/db-query && \
+    ln -s /app/db-tools/db-schema.mjs /usr/local/bin/db-schema
 
 # Create workspace directory (writable, sandbox-owned)
 # This is where the user's files, code, and agent data live.

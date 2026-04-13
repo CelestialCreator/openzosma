@@ -10,6 +10,35 @@ const log = createLogger({ component: "sandbox-agent" })
 const WORKSPACE_DIR = process.env.OPENZOSMA_WORKSPACE ?? "/workspace"
 
 /**
+ * Database capability prompt injected into sessions when DB_COUNT > 0
+ * (database integrations injected by the orchestrator as env vars).
+ * Teaches the agent about the db-query and db-schema CLI tools.
+ */
+const DB_CAPABILITY_PROMPT = `You have database integration capabilities via the \`db-query\` and \`db-schema\` CLI tools (pre-authenticated via DB_* environment variables). Use them via the bash tool when a user asks you to query or explore their databases.
+
+### What you can do
+- Introspect database schemas (tables, columns, data types)
+- Execute read-only SQL queries (SELECT, WITH...SELECT, EXPLAIN)
+- Query across multiple database integrations if configured
+
+### Common commands
+
+\`\`\`
+db-schema                                    # Show tables/columns of the default database
+db-schema --integration 2                    # Schema for the 2nd integration
+db-query "SELECT * FROM users LIMIT 10"      # Query the default database
+db-query --integration "my-db" "SELECT count(*) FROM orders"
+\`\`\`
+
+### Rules
+- Only read-only queries are allowed (SELECT, WITH...SELECT, EXPLAIN)
+- Results are auto-limited to 1000 rows
+- Queries timeout after 30 seconds
+- Output is JSON. Use \`| jq '.rows'\` for filtering
+- Always run \`db-schema\` first to discover tables before writing queries
+- Use \`echo $DB_COUNT\` to check how many databases are connected`
+
+/**
  * Slack capability prompt injected into sessions when SLACK_TOKEN is
  * available but no explicit systemPromptPrefix was provided (e.g. web
  * dashboard sessions). Teaches the agent it can interact with Slack via
@@ -125,6 +154,14 @@ export class SandboxAgentManager {
 		if (!effectivePrefix && process.env.SLACK_TOKEN) {
 			effectivePrefix = SLACK_CAPABILITY_PROMPT
 			log.info("Auto-injecting Slack capability prompt (SLACK_TOKEN detected)", { sessionId })
+		}
+
+		// Auto-inject DB capability prompt when database integrations are
+		// available (orchestrator injected DB_* env vars).
+		const dbCount = Number(process.env.DB_COUNT || "0")
+		if (dbCount > 0) {
+			effectivePrefix = effectivePrefix ? `${effectivePrefix}\n\n${DB_CAPABILITY_PROMPT}` : DB_CAPABILITY_PROMPT
+			log.info("Auto-injecting DB capability prompt (DB_COUNT detected)", { sessionId, dbCount })
 		}
 
 		log.info("SandboxAgentManager.createSession", {

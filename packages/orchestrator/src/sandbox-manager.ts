@@ -1,8 +1,9 @@
 import { existsSync } from "node:fs"
 import { dirname, isAbsolute, join, resolve } from "node:path"
 import type { Pool } from "@openzosma/db"
-import { userSandboxQueries } from "@openzosma/db"
+import { integrationQueries, userSandboxQueries } from "@openzosma/db"
 import type { UserSandbox } from "@openzosma/db"
+import { safeDecrypt } from "@openzosma/integrations"
 import { createLogger } from "@openzosma/logger"
 import { OpenShellClient } from "@openzosma/sandbox"
 import { SandboxNotFoundError, SandboxNotReadyError } from "@openzosma/sandbox"
@@ -362,7 +363,7 @@ export class SandboxManager {
 			// after we deleted it, but .env injection only happens during
 			// createSandboxForRecord). This is idempotent -- overwriting
 			// an existing .env with the same values is harmless.
-			const sandboxEnv = this.buildSandboxEnv(userId, record.sandboxName, port)
+			const sandboxEnv = await this.buildSandboxEnv(userId, record.sandboxName, port)
 			try {
 				log.info("Re-injecting .env on reconnect", {
 					sandbox: record.sandboxName,
@@ -404,7 +405,7 @@ export class SandboxManager {
 
 			// Re-inject .env after the sandbox becomes ready (same rationale
 			// as the "ready" branch above).
-			const sandboxEnv = this.buildSandboxEnv(userId, record.sandboxName, port)
+			const sandboxEnv = await this.buildSandboxEnv(userId, record.sandboxName, port)
 			try {
 				log.info("Re-injecting .env on reconnect (was provisioning)", {
 					sandbox: record.sandboxName,
@@ -466,7 +467,7 @@ export class SandboxManager {
 	 * and the SLACK_TOKEN remap. Called by both `createSandboxForRecord()`
 	 * and `handleExistingRecord()` (reconnection path).
 	 */
-	private buildSandboxEnv(userId: string, sandboxName: string, port: number): Record<string, string> {
+	private async buildSandboxEnv(userId: string, sandboxName: string, port: number): Promise<Record<string, string>> {
 		const sandboxEnv: Record<string, string> = {
 			SANDBOX_USER_ID: userId,
 			SANDBOX_NAME: sandboxName,
@@ -513,6 +514,47 @@ export class SandboxManager {
 			sandboxEnv.SLACK_TOKEN = slackBotToken
 		}
 
+		// Inject database integration credentials.
+		// The orchestrator decrypts AES-256-GCM encrypted credentials from the
+		// integrations table and injects them as DB_* env vars. The sandbox
+		// never has the ENCRYPTION_KEY — credentials exist only in process env.
+		try {
+			const integrations = await integrationQueries.listActiveIntegrationsByCreator(this.pool, userId)
+			sandboxEnv.DB_COUNT = String(integrations.length)
+
+			for (let i = 0; i < integrations.length; i++) {
+				const integration = integrations[i]
+				const config = integration.config
+				const prefix = integrations.length === 1 ? "DB" : `DB_${i + 1}`
+
+				sandboxEnv[`${prefix}_TYPE`] = integration.type
+				sandboxEnv[`${prefix}_HOST`] = safeDecrypt(config.host)
+				sandboxEnv[`${prefix}_PORT`] = String(
+					safeDecrypt(typeof config.port === "number" ? String(config.port) : config.port),
+				)
+				sandboxEnv[`${prefix}_NAME`] = safeDecrypt(config.database)
+				sandboxEnv[`${prefix}_USER`] = safeDecrypt(config.username)
+				sandboxEnv[`${prefix}_PASS`] = safeDecrypt(config.password ?? "")
+				sandboxEnv[`${prefix}_SSL`] = String(config.ssl ?? false)
+				sandboxEnv[`${prefix}_INTEGRATION_NAME`] = integration.name
+				sandboxEnv[`${prefix}_INTEGRATION_ID`] = integration.id
+			}
+
+			if (integrations.length > 0) {
+				log.info("Injected database integration credentials into sandbox env", {
+					userId,
+					count: integrations.length,
+					types: integrations.map((i) => i.type),
+				})
+			}
+		} catch (err) {
+			log.warn("Failed to load integration credentials for sandbox", {
+				userId,
+				error: err instanceof Error ? err.message : String(err),
+			})
+			sandboxEnv.DB_COUNT = "0"
+		}
+
 		return sandboxEnv
 	}
 
@@ -534,7 +576,7 @@ export class SandboxManager {
 		}
 
 		// Build the env vars to inject after the sandbox is running.
-		const sandboxEnv = this.buildSandboxEnv(userId, record.sandboxName, port)
+		const sandboxEnv = await this.buildSandboxEnv(userId, record.sandboxName, port)
 
 		await userSandboxQueries.updateStatus(this.pool, record.id, "provisioning")
 

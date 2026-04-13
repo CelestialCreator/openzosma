@@ -613,6 +613,9 @@ importers:
       '@openzosma/db':
         specifier: workspace:*
         version: link:../db
+      '@openzosma/integrations':
+        specifier: workspace:*
+        version: link:../integrations
       '@openzosma/logger':
         specifier: workspace:*
         version: link:../logger

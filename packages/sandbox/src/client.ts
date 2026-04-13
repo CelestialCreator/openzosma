@@ -288,7 +288,11 @@ export class OpenShellClient {
 	 * it into the sandbox via `sandbox upload`.
 	 */
 	async injectEnv(name: string, env: Record<string, string>): Promise<void> {
-		const lines = Object.entries(env).map(([key, value]) => `${key}=${value}`)
+		// Single-quote values and escape embedded single quotes so the
+		// entrypoint's `. /sandbox/.env` handles special characters
+		// (e.g. passwords with $, spaces, =, backticks) correctly.
+		const shellEscape = (v: string) => `'${v.replace(/'/g, "'\\''")}'`
+		const lines = Object.entries(env).map(([key, value]) => `${key}=${shellEscape(value)}`)
 		const content = `${lines.join("\n")}\n`
 
 		// `openshell sandbox upload <name> <local> <dest>` treats <dest> as a

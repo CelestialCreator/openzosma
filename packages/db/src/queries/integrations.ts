@@ -41,3 +41,18 @@ export const listIntegrations = async (pool: pg.Pool): Promise<Integration[]> =>
 	)
 	return result.rows.map(mapintegration)
 }
+
+/**
+ * List active integrations created by a specific user, ordered by name.
+ * Used by the orchestrator to inject credentials into sandboxes.
+ */
+export const listActiveIntegrationsByCreator = async (pool: pg.Pool, createdBy: string): Promise<Integration[]> => {
+	const result = await pool.query<Record<string, unknown>>(
+		`SELECT id, organizationid, teamid, name, type, config, status, createdby, createdat, updatedat
+     FROM public.integrations
+     WHERE createdby = $1 AND status = 'active'
+     ORDER BY name`,
+		[createdBy],
+	)
+	return result.rows.map(mapintegration)
+}
