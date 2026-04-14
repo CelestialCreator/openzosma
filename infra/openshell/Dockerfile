@@ -17,12 +17,7 @@
 # =============================================================================
 
 # ---------------------------------------------------------------------------
-# Stage 1: OpenShell base — extract the sandbox supervisor binary
-# ---------------------------------------------------------------------------
-FROM ghcr.io/nvidia/openshell-community/sandboxes/base:latest AS openshell-base
-
-# ---------------------------------------------------------------------------
-# Stage 2: Build sandbox-server and produce a deployable bundle.
+# Stage 1: Build sandbox-server and produce a deployable bundle.
 # Also pre-builds all native npm globals here so the runtime stage does not
 # need a C/C++ toolchain.
 # ---------------------------------------------------------------------------
@@ -96,14 +91,16 @@ RUN npm install -g \
     pi-interactive-shell
 
 # ---------------------------------------------------------------------------
-# Stage 3: Runtime
+# Stage 2: Runtime
 # ---------------------------------------------------------------------------
 FROM node:22-slim
 
 # Copy the OpenShell sandbox supervisor binary (PID 1 inside sandbox pods).
 # OpenShell overrides the entrypoint to this binary for policy enforcement,
 # signal forwarding, and lifecycle management.
-COPY --from=openshell-base /opt/openshell/bin/openshell-sandbox /opt/openshell/bin/openshell-sandbox
+# Extract from the host: ctr -n k8s.io images export then copy to infra/openshell/bin/
+COPY infra/openshell/bin/openshell-sandbox /opt/openshell/bin/openshell-sandbox
+RUN chmod +x /opt/openshell/bin/openshell-sandbox
 
 # Runtime system dependencies only — no compiler toolchain, no *-dev headers.
 #
