@@ -17,7 +17,12 @@
 # =============================================================================
 
 # ---------------------------------------------------------------------------
-# Stage 1: Build sandbox-server and produce a deployable bundle.
+# Stage 1: OpenShell base — extract the sandbox supervisor binary
+# ---------------------------------------------------------------------------
+FROM ghcr.io/nvidia/openshell-community/sandboxes/base:latest AS openshell-base
+
+# ---------------------------------------------------------------------------
+# Stage 2: Build sandbox-server and produce a deployable bundle.
 # Also pre-builds all native npm globals here so the runtime stage does not
 # need a C/C++ toolchain.
 # ---------------------------------------------------------------------------
@@ -91,9 +96,14 @@ RUN npm install -g \
     pi-interactive-shell
 
 # ---------------------------------------------------------------------------
-# Stage 2: Runtime
+# Stage 3: Runtime
 # ---------------------------------------------------------------------------
 FROM node:22-slim
+
+# Copy the OpenShell sandbox supervisor binary (PID 1 inside sandbox pods).
+# OpenShell overrides the entrypoint to this binary for policy enforcement,
+# signal forwarding, and lifecycle management.
+COPY --from=openshell-base /opt/openshell/bin/openshell-sandbox /opt/openshell/bin/openshell-sandbox
 
 # Runtime system dependencies only — no compiler toolchain, no *-dev headers.
 #
@@ -142,8 +152,8 @@ RUN pip3 install --break-system-packages \
 # Create sandbox user (OpenShell convention: non-root execution)
 # --home is required so homedir() returns a real path; bootstrapPiExtensions()
 # writes config files to ~/.pi/ and will crash if home is /nonexistent.
-RUN addgroup --system --gid 1001 sandbox && \
-    adduser --system --uid 1001 --ingroup sandbox --home /home/sandbox sandbox && \
+RUN addgroup --system --gid 1000 sandbox && \
+    adduser --system --uid 1000 --ingroup sandbox --home /home/sandbox sandbox && \
     mkdir -p /home/sandbox/.pi && \
     chown -R sandbox:sandbox /home/sandbox
 
